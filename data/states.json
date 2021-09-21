@@ -1,0 +1,32 @@
+{
+  "edges": [
+    { "from": 0, "to": 2, "arrows": "to", "title": "EVENT1"},
+    { "from": 1, "to": 2, "arrows": "to", "title": "EVENT2" },
+    { "from": 1, "to": 4, "arrows": "to", "title": "EVENT3" },
+    { "from": 2, "to": 1, "arrows": "to", "title": "EVENT4" },
+    { "from": 2, "to": 4, "arrows": "to", "title": "EVENT5" },
+    { "from": 3, "to": 2, "arrows": "to", "title": "EVENT6" },
+    { "from": 4, "to": 1, "arrows": "to", "title": "EVENT7" },
+    { "from": 3, "to": 101, "arrows": "to", "title": "EVENT8" },
+
+    { "from": 101, "to": 102, "arrows": "to", "title": "cond1" },
+    { "from": 102, "to": 104, "arrows": "to", "title": "cond2" },
+    { "from": 103, "to": 101, "arrows": "to", "title": "cond3" },
+    { "from": 103, "to": 103, "arrows": "to", "title": "cond4" },
+    { "from": 103, "to": 104, "arrows": "to", "title": "cond5" },
+    { "from": 104, "to": 103, "arrows": "to", "title": "cond6" },
+    { "from": 104, "to": 101, "arrows": "to", "title": "cond7" }
+
+  ],
+  "nodes": [
+    { "id": "0", "label": "BOOTUP" },
+    { "id": "1", "label": "SLEEP" },
+    { "id": "2", "label": "STANDBY"},
+    { "id": "3", "label": "EXPLORING", "attributes":{"substate": "EXPLORING" } },
+    { "id": "4", "label": "POWER_OFF" },
+    { "id": "101", "label": "ES_START", "attributes":{"substate": "EXPLORING" }},
+    { "id": "102", "label": "ES_WAIT", "attributes":{"substate": "EXPLORING"} },
+    { "id": "103", "label": "ES_TURN", "attributes":{"substate": "EXPLORING" }},
+    { "id": "104", "label": "ES_DRIVE", "attributes":{"substate": "EXPLORING"} }
+  ]
+}

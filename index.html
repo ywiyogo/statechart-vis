@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>State Machine</title>
+
+    <style type="text/css">
+      body,
+      select {
+        font: 10pt sans;
+      }
+      #mynetwork {
+        width: 65%;
+
+        border: 1px solid lightgray;
+      }
+      div.nodeDesc {
+        position: relative;
+        border: 1px solid lightgray;
+        width: 35%;
+        padding: 10px;
+      }
+
+      pre {
+        padding: 5px;
+        margin: 5px;
+      }
+      table.legend_table {
+        font-size: 11px;
+        border-width: 1px;
+        border-color: #d3d3d3;
+        border-style: solid;
+      }
+      table.legend_table,
+      td {
+        border-width: 1px;
+        border-color: #d3d3d3;
+        border-style: solid;
+        padding: 2px;
+      }
+      div.table_content {
+        width: 80px;
+        text-align: center;
+      }
+      div.table_description {
+        width: 100px;
+      }
+
+      #operation {
+        font-size: 28px;
+      }
+      #network-popUp {
+        display: none;
+        position: absolute;
+        top: 350px;
+        left: 170px;
+        z-index: 299;
+        width: 250px;
+        height: 120px;
+        background-color: #f9f9f9;
+        border-style: solid;
+        border-width: 3px;
+        border-color: #5394ed;
+        padding: 10px;
+        text-align: center;
+      }
+    </style>
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/vis@4.21.0/dist/vis.js"
+    ></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <script type="text/javascript" src="vis_statechart.js"></script>
+  </head>
+
+  <body class="container mx-auto my-auto text-base">
+    <div class="flex flex-col h-screen">
+      <div>
+        <h2 class="text-3xl w-full text-center">State Machine Visualizer</h2>
+      </div>
+
+      <div>
+        <div class="w-1/5 items-center justify-center bg-blue-500 mr-4 my-2">
+          <label
+            class="
+              flex flex-col
+              items-center
+              px-4
+              text-white
+              shadow-lg
+              tracking-wide
+              border border-blue
+              cursor-pointer
+              hover:bg-blue hover:text-white
+            "
+          >
+          <div class="flex ">
+            <svg
+              class="w-1/6 py-1 flex"
+              fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+            >
+              <path
+                d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4-4-4 4h3v3h2v-3z"
+              />
+            </svg>
+            <span class="text-base leading-normal mx-auto my-auto">Select a json file</span>
+            <input
+              type="file"
+              id="file-selector"
+              accept=".json"
+              class="hidden"
+            />
+          </div>
+          </label>
+        </div>
+
+        <button
+          class="
+            w-1/5
+            bg-blue-500
+            hover:bg-blue-700
+            text-white
+            font-bold
+            py-2
+            px-4
+            rounded
+          "
+          onclick="clusterBySubstate()"
+        >
+          Cluster all nodes by substates
+        </button>
+      </div>
+
+      <div class="flex flex-grow space-x-4 my-2">
+        <div id="mynetwork" class="bg-gray-800 text-white"></div>
+        <div class="nodeDesc">
+          <h4>Node description:</h4>
+          <pre id="nodeDesc"></pre>
+        </div>
+      </div>
+    </div>
+
+    <div id="footer" class="bg-gray-100 fixed inset-x-0 bottom-0">
+      <div
+        class="container mx-auto py-2 px-5 flex flex-wrap flex-col sm:flex-row"
+      >
+        <p class="text-gray-500 text-sm text-center mx-auto">
+          © 2021 Handmade:
+          <a
+            href="https://www.wiyogo.com/"
+            class="text-gray-600 ml-1"
+            target="_blank"
+            >Yongkie Wiyogo</a
+          >
+        </p>
+      </div>
+    </div>
+
+    <script type="text/javascript">
+      var container = document.getElementById("mynetwork");
+      var nodeDesc = document.getElementById("nodeDesc");
+
+      var nodes = new vis.DataSet();
+      var edges = new vis.DataSet();
+
+      const fileSelector = document.getElementById("file-selector");
+      var jsonData = null;
+
+      fileSelector.addEventListener("change", (event) => {
+        const fileList = event.target.files;
+        const file = event.target.files[0];
+        if (!file.type) {
+          status.textContent =
+            "Error: The File.type property does not appear to be supported on this browser.";
+          return;
+        }
+        if (!file.type.match("json.*")) {
+          status.textContent =
+            "Error: The selected file does not appear to be a json.";
+          return;
+        }
+        var fileread = new FileReader();
+        // Loading the file is async
+        fileread.onload = function (e) {
+          var content = e.target.result;
+          try {
+            jsonData = JSON.parse(content); // Array of Objects.
+          } catch (err) {
+            container.innerHTML = err.message;
+          }
+          redrawAll(jsonData);
+        };
+        fileread.readAsText(file);
+      });
+
+      var data = {
+        nodes: nodes,
+        edges: edges,
+      };
+
+      var options = {
+        nodes: {
+          shape: "box",
+          color: {
+            border: "lightgray",
+            background: "white",
+          },
+          scaling: {
+            min: 10,
+            max: 30,
+            label: {
+              min: 8,
+              max: 30,
+              drawThreshold: 12,
+            },
+          },
+        },
+        edges: {
+          color: { inherit: true },
+          width: 0.15,
+          smooth: {
+            type: "continuous",
+          },
+          color: "lightgray",
+        },
+        physics: false,
+        // physics: {
+        //   stabilization: false,
+        //   barnesHut: {
+        //     gravitationalConstant: -10000,
+        //     springConstant: 0.002,
+        //     springLength: 150,
+        //   },
+        // },
+        layout: {
+          hierarchical: {
+            nodeSpacing: 280,
+            treeSpacing: 150,
+            levelSeparation: 80,
+            direction: "UD",
+            sortMethod: "directed",
+          },
+        },
+        interaction: {
+          tooltipDelay: 200,
+          hideEdgesOnDrag: false,
+        },
+      };
+
+      var network = new vis.Network(container, data, options);
+      network.on("click", function (params) {
+        if (params.nodes.length > 0) {
+          var data = nodes.get(params.nodes[0]); // get the data from selected node
+          console.log(data);
+          nodeDesc.innerHTML = JSON.stringify(data, undefined, 3) + "\n\n"; // show the data in the div
+          nodeDesc.innerHTML += "Transitions to and from the node: \n";
+          data = edges.get(params.edges);
+          nodeDesc.innerHTML += JSON.stringify(data, undefined, 3); // show the data in the div
+        } else {
+          if (params.edges.length > 0) {
+            var data = edges.get(params.edges[0]); // get the data from selected node
+            nodeDesc.innerHTML = JSON.stringify(data, undefined, 3); // show the data in the div
+          }
+        }
+      });
+
+      network.on("selectNode", function (params) {
+        if (params.nodes.length == 1) {
+          if (network.isCluster(params.nodes[0]) == true) {
+            network.openCluster(params.nodes[0]);
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
